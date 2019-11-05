@@ -331,10 +331,10 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
             selected_file = self._settings.global_get_basefolder("uploads") + '/' + payload['path']
             f = open(selected_file, 'r')
 
-            minX = float(0)
-            minY = float(0)
-            maxX = float(0)
-            maxY = float(0)
+            minX = float(1000000)
+            minY = float(1000000)
+            maxX = float(-100000)
+            maxY = float(-100000)
 
             x = float(0)
             y = float(0)
@@ -343,7 +343,8 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
                 if line.startswith("G0") or line.startswith("G1"):
                     match = re.search(r"^G[01].*X\ *(-?[\d.]+).*", line)
                     if not match is None:
-                        x = x + float(match.groups(1)[0])
+                        # x = x + float(match.groups(1)[0])
+                        x = float(match.groups(1)[0])
                         if x < minX:
                             minX = x
                         if x > maxX:
@@ -351,7 +352,8 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
 
                     match = re.search(r"^G[01].*Y\ *(-?[\d.]+).*", line)
                     if not match is None:
-                        y = y + float(match.groups(1)[0])
+                        # y = y + float(match.groups(1)[0])
+                        y = float(match.groups(1)[0])
                         if y < minY:
                             minY = y
                         if y > maxY:
@@ -398,6 +400,11 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
         if self.suppressM110 and cmd.upper().startswith('M110'):
             self._logger.debug('Ignoring %s', cmd)
             return (None, )
+
+        # suppress parenthesis comments 
+        if cmd.startswith('('):
+            self._logger.debug('Ignoring %s', cmd)
+            return (None,)
 
         # suppress initialize SD - M21
         if cmd.upper().startswith('M21'):
@@ -451,7 +458,7 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
 
             match = re.search(r"^[GM][014].*F\ *(-?[\d.]+).*", cmd)
             if not match is None:
-                grblSpeed = int(match.groups(1)[0])
+                grblSpeed = int(float(match.groups(1)[0]))
 
                 # make sure we post all speed on / off events
                 if (grblSpeed == 0 and self.grblSpeed != 0) or (self.grblSpeed == 0 and grblSpeed != 0):
@@ -585,8 +592,8 @@ class BetterGrblSupportPlugin(octoprint.plugin.SettingsPlugin,
         match = re.search(r"F(-?[\d.]+) S(-?[\d.]+)", line)
 
         if not match is None:
-            self.grblSpeed = int(match.groups(1)[0])
-            self.grblPowerLevel = int(match.groups(1)[1])
+            self.grblSpeed = int(float(match.groups(1)[0]))
+            self.grblPowerLevel = int(float(match.groups(1)[1]))
 
             self._plugin_manager.send_plugin_message(self._identifier, dict(type="grbl_state",
                                                                             state=self.grblState,
